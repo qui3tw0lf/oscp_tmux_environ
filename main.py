@@ -7,6 +7,7 @@ import libtmux
 import argparse
 import coloredlogs
 import configparser
+from configobj import ConfigObj
 
 
 REQUIRED_WINDOWS = {}
@@ -73,22 +74,20 @@ def check_options(args):
 def check_config():
     global ATTR_PING, REQUIRED_WINDOWS, RUN_ONCE_WINDOWS
     try:
-        parser = configparser.ConfigParser()
-        parser.read('tmux.ini')
-        sections = parser.sections()
-        if "general" in  sections:
-            sec_general = parser['general']
-            ATTR_PING = sec_general.getboolean('add_ping', False)
-        if "windows" in sections:
+        parser = ConfigObj('conf.ini', list_values=True, unrepr=True)
+        if 'windows' in parser.sections:
             sec_windows = parser['windows']
-            for win in sec_windows:
-                REQUIRED_WINDOWS[win] = json.loads(sec_windows.get(win, ""))
-        if "run_once" in sections:
-            sec_runonce = parser['run_once']
-            for win in sec_runonce:
-                RUN_ONCE_WINDOWS[win] = json.loads(sec_runonce.get(win, ""))
+            for win in sec_windows.sections:
+                commands = sec_windows[win]['commands']
+                run_once = sec_windows[win]['run_once']
+                REQUIRED_WINDOWS[win] = [commands, run_once]
+        if 'general' in parser.sections:
+            sec_general = parser['general']
+            ATTR_PING = sec_general['ping']
+        print(REQUIRED_WINDOWS)
     except Exception as e:
         logging.error(e)
+        raise e
 
 
 def setup_session():
@@ -125,6 +124,7 @@ def setup_session():
         create_windows(server)
     except Exception as e:
         logging.error(e)
+        raise e
 
 
 def create_windows(server):
@@ -132,7 +132,11 @@ def create_windows(server):
         for window in REQUIRED_WINDOWS:
             if len(TARGET_SESSION.where({"window_name": window})):
                 continue
-            panes = REQUIRED_WINDOWS[window]
+            panes = REQUIRED_WINDOWS[window][0]
+            run_once = REQUIRED_WINDOWS[window][1]
+            if run_once and TARGET_RECREATED:
+                logging.info("Skipping window '%s'" % (window))
+                continue
             len_panes = len(panes)
             logging.info("Creating window %s with panes %s" % (window, ", ".join(panes)))
             tmp_window = TARGET_SESSION.new_window(window_name=window, start_directory=TARGET_DIR)
@@ -152,7 +156,7 @@ def create_windows(server):
             tmp_panes_list = tmp_window.panes
             for x in range(len_panes):
                 pane = tmp_panes_list[x]
-                cmd = REQUIRED_WINDOWS[window][x]
+                cmd = REQUIRED_WINDOWS[window][0][x]
                 pane.send_keys(cmd)
     except Exception as e:
         logging.error(e)
