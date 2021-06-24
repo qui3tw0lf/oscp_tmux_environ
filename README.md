@@ -2,7 +2,7 @@
 
 Setup a tmux environment for targets like on HackTheBox, Vulnhub, TryHackme. It creates a directory for the target and then sets up some windows in newly created tmux session to perform basic operations like a _nmap scan_ or a _ping test_ to ensure the machine is up.
 
-Settings can be modified using the conf.ini_ file.
+Settings can be modified using the _conf.ini_ file.
 
 It contains all the basic configurations including:
 - Window list
