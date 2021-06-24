@@ -20,11 +20,11 @@ python3 main.py -t [machine_name]:[machine_ip] -d [machine_dir]
 #### Options
 ```
 -t  :   machine_name:machine_ip
--d  :   machine directory
+-d  :   machine directory (Default: Current working directory)
 ```
 
 #### Examples
 ```bash
 python3 main.py -t machine1:127.0.0.1 -d /tmp/machine1
-python3 main.py -t machine1:127.0.0.1       # Directory defaults to the current working directory
+python3 main.py -t machine1:127.0.0.1
 ```
